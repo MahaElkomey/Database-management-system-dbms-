@@ -1,5 +1,13 @@
 #!/bin/bash
-echo "-------------All data In [$1][$2] table-------------"
-cat ~/DB/$1/$2 #read all data in table
-echo "-----------------------------------------------------"
-source SelectMenu.sh $1 $2
+header=""
+FieldName=`cut -d":" -f1 ~/DB/$dbname/$tablename.meta`;
+for field in $FieldName
+do
+    header+=${field^^}"," # ^^ for capitalization
+done
+
+echo "---------------All data In [$dbname][$tablename] table---------------"
+#cat ~/DB/$1/$2 #read all data in table
+column -t -s ":" -N "$header" -o "|" ~/DB/$dbname/$tablename
+echo "----------------------------------------------------------------------"
+source SelectMenu.sh

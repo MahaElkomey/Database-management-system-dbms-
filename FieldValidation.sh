@@ -1,23 +1,23 @@
 #!/bin/bash
 valid=0
-if [[ $tablename=[a-zA-Z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
+if [[ $fieldname = [A-Za-z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
 then
-    if [[ $1 -eq 0 ]]; # 0 for create table
+    if [[ $1 -eq 0 ]]; # 0 for create field
     then
-        if ! [[ -e ~/DB/$dbname/$tablename ]];
+        if ! [[ $(cut -d":" -f 1 $tablename".meta" | grep -w "^$fieldname$") ]];
         then
             valid=1
         else
             echo "----------------------------------------------------------------------"
-            echo "-----------------Table [$tablename] is alredy exist------------------"
+            echo "------------------Field [$fieldname] is alredy exist------------------"
             echo "----------------------------------------------------------------------"
         fi
     elif [[ $1 -eq 1 ]]; # for all
     then
-        if ! [[ -e ~/DB/$dbname/$tablename ]];
+        if ! [[ $(cut -d":" -f 1 $tablename".meta" | grep -w "^$fieldname$") ]]; # echo $? for condition
         then
             echo "----------------------------------------------------------------------"
-            echo "--------------------Table [$tablename] is not exist-----------------"
+            echo "--------------------Field [$fieldname] is not exist-------------------"
             echo "----------------------------------------------------------------------"
         else
             valid=1
@@ -25,6 +25,6 @@ then
     fi
 else
     echo "----------------------------------------------------------------------"
-    echo "-----------The Table name not contain spechial characters-------------"
+    echo "-------- The database name not contain spechial characters -----------"
     echo "----------------------------------------------------------------------"
 fi

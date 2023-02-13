@@ -1,44 +1,67 @@
 #!/bin/bash
+# Enter number of fields
 FieldArr=""
 while true
-    read -p "Enter the number of field you want to select it : " Fcount;
+    read -p "[$dbname][$tablename] Number of Fields : " Fcount;
     do
-        if [[ $Fcount = [0-9] ]]
+        if [[ $Fcount = +([0-9]) ]]
         then
             break
         fi
     done
 
-while true
-read -p "Enter the field name in[$1][$2] : " Fname;
+
+
+touch ~/DB/$dbname/header # file for display header
+touch ~/DB/$dbname/headerNum
+touch ~/DB/$dbname/headerNumPrint
+header=""
+
+while (( $Fcount > 0 ))
 do
-    if [[ $Fname = [A-Za-z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
-        then
-	    FieldNum=`awk -F: -v fname=$Fname '{if($1==fname)print NR}' ~/DB/$1/$2.meta`;
-            if [[ $FieldNum -gt 0 ]];
-            then
-                if [ $Fcount -eq 1 ]
-                then
-                    FieldArr=$FieldArr$FieldNum;
-                else
-                    FieldArr=$FieldArr$FieldNum",";
-                fi
-		        Fcount=$(( Fcount - 1));
-            else
-		        echo "----------------------------------------"
-                echo "---------Field name is not exist--------"
-                echo "----------------------------------------"   
-            fi
+    while true
+    do
+        read -p "[$dbname][$tablename] Select <Field name>: " fieldname
+        source FieldValidation.sh 1
+        if [[ $valid -eq 1 ]]
+        then 
+            break
+        fi
+    done
+
+    # for create -f for cut like this -----> 1,2,3,4
+    FieldNum=`awk -F: -v fname=$fieldname '{if($1==fname)print NR}' ~/DB/$dbname/$tablename.meta`;
+    
+    if [ $Fcount -eq 1 ]
+    then
+        FieldArr=$FieldArr$FieldNum;
     else
-            echo "--------------------------------------------------------------------------------------------------"
-            echo "---------The field name must begin with a letter and not contain any special character---------"
-            echo "--------------------------------------------------------------------------------------------------"
+        FieldArr=$FieldArr$FieldNum",";
     fi
-if [ $Fcount -lt 1 ]
-then
-   break
-fi
+    Fcount=$(( Fcount - 1));
+
+    if ! [[ $(grep -w "^$fieldname$" ~/DB/$dbname/header) ]];
+    then
+    	echo $FieldNum >> ~/DB/$dbname/headerNum;
+        echo $fieldname >> ~/DB/$dbname/header
+    fi
+    
 done
-#echo $FieldArr
-cut -d: -f $FieldArr ~/DB/$1/$2;
-source SelectMenu.sh $1 $2
+
+sort ~/DB/$dbname/headerNum | uniq > ~/DB/$dbname/headerNumPrint;
+fieldHeader=`cat ~/DB/$dbname/headerNumPrint`;
+for num in $fieldHeader
+do
+	headerTemp=`awk -F: -v fnum=$num '{if(NR==fnum)print $1}' ~/DB/$dbname/$tablename.meta`;
+	header+=${headerTemp^^};
+	header+=",";
+done
+
+
+echo "-------------Output data In [$dbname][$tablename] table---------------"
+cut -d: -f $FieldArr ~/DB/$dbname/$tablename | column -t -s ":" -N "$header" -o "|"
+echo "----------------------------------------------------------------------"
+rm -f ~/DB/$dbname/header
+rm -f ~/DB/$dbname/headerNum
+rm -f ~/DB/$dbname/headerNumPrint
+source SelectMenu.sh

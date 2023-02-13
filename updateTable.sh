@@ -1,121 +1,138 @@
 #!/bin/bash
-# while true
-# read -p "Enter the Table name: " tablename
-# do
-#     if [[ $tablename = [A-Za-z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
-#         then
-#             if ! [[ -e ~/DB/$1/$tablename ]];
-#             then
-#                 echo "----------------------------------------"
-#                 echo "-------Table name is not exist-------"
-#                 echo "----------------------------------------"
-#             else
-#                 break
-#             fi
-#         else
-#             echo "--------------------------------------------------------------------------------------------------"
-#             echo "---------The Table name must begin with a letter and not contain any special character---------"
-#             echo "--------------------------------------------------------------------------------------------------"
-#     fi
-# done
 
-source TableValidation.sh 1
+# table name validation
 while true
-read -p "Which field use to update in [$tablename]: " fieldname
 do
-    if [[ $fieldname = [A-Za-z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
+    read -p "[$dbname] Update table <table name> : " tablename
+    source TableValidation.sh 1
+    if [[ $valid -eq 1 ]]
+    then 
+        break
+    fi
+done
+
+# field name validation
+while true
+do
+	read -p "[$dbname][$tablename] Field <Field name> : " fieldname
+	source FieldValidation.sh 1
+	if [[ $valid -eq 1 ]]
+	then 
+		break
+	fi
+done
+
+# information about where condition
+fieldnum=$( awk -F: -v fieldname=$fieldname '{if($1==fieldname)print NR}' ~/DB/$dbname/$tablename.meta )
+FieldType=`awk -F: -v fnum=$fieldnum '{if(NR==fnum)print $2}' ~/DB/$dbname/$tablename.meta`;
+while true
+do
+    read -p "[$dbname][$tablename] Where [$fieldname] equal : " FieldValue
+    source dataTypeValidation.sh
+    if [ $valid -eq 1 ]	
     then
-        if [[ $(cut -d":" -f 1 $tablename".meta" | grep "$fieldname") ]];
+        data=$FieldValue
+        break;
+    fi
+done
+
+
+touch ~/DB/$dbname/temp2
+touch ~/DB/$dbname/temp3
+awk -F: -v fieldnum=$fieldnum -v data=$data '{if($fieldnum==data)print $0}' ~/DB/$dbname/$tablename > ~/DB/$dbname/temp2 # for column that will be updated
+awk -F: -v fieldnum=$fieldnum -v data=$data '{if($fieldnum!=data)print $0}' ~/DB/$dbname/$tablename > ~/DB/$dbname/temp3 # column will not be updated
+NumberOfTargetRows=`cat ~/DB/$dbname/temp2 | wc -l`
+
+while true
+do
+    # field name validation that will be updated
+    while true
+    do
+        read -p "[$dbname][$tablename] Field <Field name> : " fieldname
+        source FieldValidation.sh 1
+        if [[ $valid -eq 1 ]]
         then
-            read -p "Enter the data which in [$fieldname] field: " data
-            fieldnum=$( awk -F: -v fieldname=$fieldname '{if($1==fieldname)print NR}' ~/DB/$1/$tablename.meta )
             break
-        else
-            echo "----------------------------------------"
-            echo "-----Field name is not exist------"
-            echo "----------------------------------------"
         fi
-    else
-        echo "--------------------------------------------------------------------------------------------------"
-        echo "---------The Field name must begin with a letter and not contain any special character---------"
-        echo "--------------------------------------------------------------------------------------------------"
-    fi  
-done
+    done
 
-while true
-do
-    NumberOfRowUpdated=0
-    read -p "Which field you want to update in [$tablename]: " updatablefield
-    if [[ $updatablefield = [A-Za-z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
+    updatablefieldnum=$( awk -F: -v updatablefield="$fieldname" '{if($1==updatablefield)print NR}' ~/DB/$dbname/"$tablename".meta )
+
+    # check if we will update the primary key
+    if [[ NumberOfTargetRows -gt 1 &&  updatablefieldnum -eq 1 ]]
     then
-        if [[ $(cut -d":" -f 1 $tablename".meta" | grep "$updatablefield") ]];
+        echo "----------------------------------------------------------------------"
+        echo "-----------Primary key can't updated for more than one record---------"
+        echo "----------------------------------------------------------------------"
+        continue 
+    fi
+
+    FieldType=$( awk -F: -v fieldname="$fieldname" '{if($1==fieldname)print $2}' ~/DB/$dbname/"$tablename".meta )
+    touch ~/DB/$dbname/temp
+    
+    while true
+    do
+        
+        while true
+        do
+            read -p "[$dbname][$tablename] Set [$fieldname] equal : " FieldValue
+            source dataTypeValidation.sh;
+            if [ $valid -eq 1 ]	
+            then
+                break;
+            fi	
+        done
+
+        if [[ $updatablefieldnum -eq 1 ]]
         then
-            updatablefieldnum=$( awk -F: -v updatablefield=$updatablefield '{if($1==updatablefield)print NR}' ~/DB/$1/$tablename.meta )
-            FieldType=$( awk -F: -v fieldname=$updatablefield '{if($1==fieldname)print $2}' ~/DB/$1/$tablename.meta )
-            touch ~/DB/$1/temp
+            if [[ $(cut -d":" -f 1 $tablename | grep "^$FieldValue$") ]];
+            then
+				echo "----------------------------------------------------------------------"
+				echo "---------------------primary key should be unique---------------------"
+				echo "----------------------------------------------------------------------" 
+                continue
+			fi
+		fi
+        awk -F: -v data=$data -v fieldnum=$fieldnum -v updatablefieldnum=$updatablefieldnum -v FieldValue=$FieldValue 'BEGIN {OFS = FS} {if($fieldnum==data){$updatablefieldnum=FieldValue;} print $0}' ~/DB/$dbname/temp2 > ~/DB/$dbname/temp
+        break
+    done
 
-            while true
-            read -p "Enter the updatable value in [[$updatablefield]] field [$1] : " FieldValue
-            do
-                if [ $FieldType = "Int" ];
-                then
-                    if [[ $FieldValue =  +([0-9]) ]];
-                    then
-                        awk -F: -v data=$data -v fieldnum=$fieldnum -v updatablefieldnum=$updatablefieldnum -v FieldValue=$FieldValue 'BEGIN {OFS = FS} {if($fieldnum==data){$updatablefieldnum=FieldValue;} print $0}' ~/DB/$1/$tablename > ~/DB/$1/temp
-                        break
-                    else
-                        echo "----------------------------------------"
-                        echo "---------the value should be int--------"
-                        echo "----------------------------------------"
-                        continue
-                    fi
-                else
-                    awk -F: -v data=$data -v fieldnum=$fieldnum -v updatablefieldnum=$updatablefieldnum -v FieldValue=$FieldValue 'BEGIN {OFS = FS} {if($fieldnum==data){$updatablefieldnum=FieldValue;} print $0}' ~/DB/$1/$tablename > ~/DB/$1/temp
-                    break
-                fi
-            done
+    if [[ $updatablefieldnum -eq  $fieldnum ]]
+    then
+        data=$FieldValue
+    fi
 
-            NumberOfRowUpdated=`diff ~/DB/$1/temp ~/DB/$1/$tablename | wc -l`
-            NumberOfRowUpdated=$(( ($NumberOfRowUpdated -2)/2  ))
-            cat ~/DB/$1/temp > ~/DB/$1/$tablename
-            rm -f ~/DB/$1/temp
-            read -N 1 -p "Are you want another update [y/n]? " check
-            while true
-            do
-                if [[ $check = "y" ]]
-                then
-                    echo
-                    continue 2
-                elif [[ $check = "n" ]] 
-                then
-                    echo
-                    break 2
-                else
-                    echo "Enter "y" for YES "n" for NO "
-                fi
-            done
+    cat ~/DB/$dbname/temp > ~/DB/$dbname/temp2
 
+    read -N 1 -p "Are you want another update [y/n]? " check
+    while true
+    do
+        if [[ $check = "y" ]]
+        then
+            echo
+            continue 2
+        elif [[ $check = "n" ]] 
+        then
+            echo
+            break 2
         else
-            echo "----------------------------------------"
-            echo "-----Field name is not exist------"
-            echo "----------------------------------------"
+            break 2
         fi
-    else
-        echo "--------------------------------------------------------------------------------------------------"
-        echo "---------The Field name must begin with a letter and not contain any special character---------"
-        echo "--------------------------------------------------------------------------------------------------"
-    fi  
+    done
 done
-if (( $NumberOfRowUpdated < 0 ));
-then
-    echo "----------------------------------------"
-    echo "----- 0 rows is updated ------"
-    echo "----------------------------------------"
-else
-    echo "----------------------------------------"
-    echo "-----$NumberOfRowUpdated rows is updated------"
-    echo "----------------------------------------"
-fi
+
+
+
+    cat ~/DB/$dbname/temp2 >> ~/DB/$dbname/temp3
+    NumberOfRowUpdated=`sort ~/DB/$dbname/temp3 ~/DB/$dbname/$tablename | uniq -u | wc -l`   # unique print replicated record once, -u option print only unique record
+    NumberOfRowUpdated=$(( $NumberOfRowUpdated/2  ))
+    sort -n ~/DB/$dbname/temp3 > ~/DB/$dbname/"$tablename"
+    rm -f ~/DB/$dbname/temp*
+
+    echo "----------------------------------------------------------------------"
+    echo "---------------------- $NumberOfRowUpdated rows is updated -----------------------------"
+    echo "----------------------------------------------------------------------"
+
 source QueryMenu.sh
 
 

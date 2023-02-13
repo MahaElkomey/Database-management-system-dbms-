@@ -1,28 +1,17 @@
 #!/bin/bash
-# while true
-# read -p "Enter the DataBase name: " dbname
-# do
-#     if [[ $dbname = [A-Za-z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
-#         then
-#             if ! [[ -e ~/DB/$dbname ]];
-#                 then
-#                     break
-#                 else
-#                     echo "----------------------------------------"
-#                     echo "-----DataBase name is alredy exist------"
-#                     echo "----------------------------------------"
-#             fi
-#         else
-#             echo "--------------------------------------------------------------------------------------------------"
-#             echo "---------The database name must begin with a letter and not contain any special character---------"
-#             echo "--------------------------------------------------------------------------------------------------"
-#     fi
-# done
-source DatabaseValidation.sh 0
+while true
+do
+    read -p "Create DataBase <DataBase name>: " dbname
+    source DatabaseValidation.sh 0
+    if [[ $valid -eq 1 ]]
+    then 
+        break
+    fi
+done
+
 mkdir ~/DB/$dbname
-echo "----------------------------------------"
-echo "-------DataBase $dbname is Added--------"
-echo "----------------------------------------"
-#cd ~/DB/$dbname
+echo "--------------------------------------------------------------------------------------------------"
+echo "------------------------------------ DataBase $dbname is Added -----------------------------------"
+echo "--------------------------------------------------------------------------------------------------"
 source DBMenu.sh
 

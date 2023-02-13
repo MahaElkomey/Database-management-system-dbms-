@@ -1,25 +1,23 @@
-echo
-PS3="Enter query operation number [$1][$2] : "
+PS3="Enter query operation number [$dbname][$tablename] : "
 select choice in "Select-All" "Selection" "Projection" "Exit";
 do
     case $REPLY in
         1) 
-            source SelectAll.sh $1 $tablename
-	    break;;
+            source SelectAll.sh
+	        break;;
         2) 
-            source Selection.sh $1 $tablename
+            source Selection.sh
             break;;
         3) 
-            source Projection.sh $1 $tablename
+            source Projection.sh
             break;;
         4)
-            echo "--------------------------------------"
-            cd ~/DB/$1
+            echo "----------------------------------------------------------------------"
             source QueryMenu.sh
             break;;
-            *) 
-                echo "--------------------------------------"
-                echo "-------------wrong choise-------------"
-                echo "--------------------------------------"
+        *) 
+            echo "----------------------------------------------------------------------"
+            echo "--------------------------------wrong choise--------------------------"
+            echo "----------------------------------------------------------------------"
     esac
 done

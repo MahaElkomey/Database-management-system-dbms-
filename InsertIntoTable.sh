@@ -1,86 +1,75 @@
 #!/bin/bash
 
-# while true
-# read -p "Enter the Table name [$1] : " Tname
-# do
-#     if [[ $Tname = [A-Za-z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
-#         then
-#             if ! [[ -e ~/DB/$1/$Tname ]];
-#                 then
-#                     echo "----------------------------------------"
-#                     echo "-------Table name is not exist-------"
-#                     echo "----------------------------------------"
-#                 else
-#                     break
-#             fi
-#         else
-#             echo "--------------------------------------------------------------------------------------------------"
-#             echo "---------The Table name must begin with a letter and not contain any special character---------"
-#             echo "--------------------------------------------------------------------------------------------------"
-#     fi
-# done
-
-#insertion section 
-
-source TableValidation.sh 1
-FieldName=`cut -d":" -f1 ~/DB/$1/$tablename.meta`;
-i=0;
-for field in $FieldName;
+# table name validation
+while true
 do
-
-	FieldType=`awk -F: -v fname=$field '{if($1==fname)print $2}' ~/DB/$1/$tablename.meta`;
-	if [ $i -eq 0 ] #check the primary key should be unique
-	then
-		while true
-		do
-		    read -p "Insert the primary key [[$field]] value in[$1][$tablename] : " FieldValue
-			if [ $FieldType = "Int" ];
-			then
-				if ! [[ $FieldValue =  +([0-9]) ]];
-				then
-					echo "----------------------------------------"
-					echo "---------the value should be int--------"
-					echo "----------------------------------------"
-					continue;	
-				fi
-			fi
-
-			if [[ $(cut -d":" -f 1 $tablename | grep "$FieldValue") ]];
-                    	then
-				echo "---------------------------------------------"
-				echo "---------primary key should be unique--------"
-				echo "---------------------------------------------" 
-			else
-				break
-			fi
-		done
-	InsertRow=$FieldValue;
-	else #insert any other value withen DB constrain (Int or String) 
-		while true
-			do
-		    	read -p "Insert the [[$field]] field value in[$1][$tablename] : " FieldValue
-		    	if [ $FieldType = "Int" ];
-			then
-				if [[ $FieldValue =  +([0-9]) ]];
-				then
-					break
-				else
-					echo "----------------------------------------"
-					echo "---------the value should be int--------"
-					echo "----------------------------------------"
-				fi
-			else
-				break
-			fi
-		done
-	InsertRow=$InsertRow":"$FieldValue;
-	fi
- 
-i=$(( i + 1));
+    read -p "[$dbname] Insert into table <table name>: " tablename
+    source TableValidation.sh 1
+    if [[ $valid -eq 1 ]]
+    then 
+        break
+    fi
 done
-echo $InsertRow >> $tablename;
-echo "----------------------------------------------------"
-echo "---------------"1 record is inserted"----------------"
-echo "----------------------------------------------------" 
-source QueryMenu.sh
 
+
+NumOfRecord=0;
+while true
+do
+	NumOfRecord=$(( NumOfRecord + 1));
+	FieldName=`cut -d":" -f1 ~/DB/$dbname/$tablename.meta`;
+	i=0;
+	for field in $FieldName;
+	do
+		FieldType=`awk -F: -v fname=$field '{if($1==fname)print $2}' ~/DB/$dbname/$tablename.meta`;
+		if [ $i -eq 0 ] #check the primary key should be unique
+		then
+			while true
+			do
+				read -p "[$dbname][$tablename] Insert into [$field] <primary key> : " FieldValue
+				source dataTypeValidation.sh;
+				if [ $valid -eq 1 ]
+				then
+					if [[ $(cut -d":" -f 1 $tablename | grep -w "^$FieldValue$") ]];
+				    	then
+						echo "----------------------------------------------------------------------"
+						echo "--------------------primary key should be unique----------------------"
+						echo "----------------------------------------------------------------------" 
+					else
+						break
+					fi
+				fi
+			done
+			InsertRow="$FieldValue";
+		else #insert any other value withen DB constrain (Int or String) 
+			while true
+			do
+				read -p "[$dbname][$tablename] Insert into [$field] : " FieldValue
+				source dataTypeValidation.sh;
+				if [ $valid -eq 1 ]	
+				then
+					break;
+				fi	
+			done
+			InsertRow=$InsertRow":"$FieldValue;
+		fi
+		i=$(( i + 1));
+	done
+	read -N 1 -p "Do you want to insert another record [y/n]? " check
+        if [[ $check = "y" ]]
+        then
+            echo
+            echo $InsertRow >> ~/DB/$dbname/$tablename;
+            continue 
+        elif [[ $check = "n" ]] 
+        then
+            echo
+            break 
+        else
+            break 
+        fi
+done
+echo $InsertRow >> ~/DB/$dbname/$tablename;
+echo "----------------------------------------------------------------------"
+echo "------------------------"$NumOfRecord record is inserted"-------------------------"
+echo "----------------------------------------------------------------------" 
+source QueryMenu.sh

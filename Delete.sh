@@ -1,67 +1,59 @@
 #!/bin/bash
-PS3="Enter Delete type number: "
+
 while true
-read -p "Enter the Table name: " tablename
 do
-    if [[ $tablename = [A-Za-z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
-        then
-            if ! [[ -e ~/DB/$1/$tablename ]];
-            then
-                echo "----------------------------------------"
-                echo "-------Table name is not exist-------"
-                echo "----------------------------------------"
-            else
-                break
-            fi
-        else
-            echo "--------------------------------------------------------------------------------------------------"
-            echo "---------The Table name must begin with a letter and not contain any special character---------"
-            echo "--------------------------------------------------------------------------------------------------"
+    read -p "[$dbname] Delete from table <table name>: " tablename
+    source TableValidation.sh 1
+    if [[ $valid -eq 1 ]]
+    then 
+        break
     fi
 done
 
-before=$(wc -l < ~/DB/$1/$tablename)
+PS3="Enter Delete type number: "
+before=$(wc -l < ~/DB/$dbname/$tablename)
 select choice in "Delete ALL Records" "Delete Specific Records"
 do
     case $REPLY in
         1) 
-            > ~/DB/$1/$tablename
+            > ~/DB/$dbname/$tablename
             break;;
-        2) while true
+        2)
+            while true
             do
-                read -p "Enter field name you want to delete with: " fieldname
-                if [[ $fieldname = [A-Za-z]*([A-Z]|[_-]|[a-z]|[0-9]) ]];
-                then
-                    if [[ $(cut -d":" -f 1 $tablename".meta" | grep "$fieldname") ]];
-                    then
-                        read -p "Enter the data which in [$fieldname] field: " data
-                        fieldnum=$( awk -F: -v fieldname=$fieldname '{if($1==fieldname)print NR}' ~/DB/$1/$tablename.meta )
-                        
-                        touch ~/DB/$1/temp
-                        awk -F: -v data=$data fieldnum=$fieldnum'{if($fieldnum!=data)print $0}' ~/DB/$1/$tablename > ~/DB/$1/temp
-                        cat ~/DB/$1/temp > ~/DB/$1/$tablename
-                        rm -f ~/DB/$1/temp
-                        break
-                    else
-                        echo "----------------------------------------"
-                        echo "-----Field name is not exist------"
-                        echo "----------------------------------------"
-                    fi
-                else
-                    echo "--------------------------------------------------------------------------------------------------"
-                    echo "---------The database name must begin with a letter and not contain any special character---------"
-                    echo "--------------------------------------------------------------------------------------------------"
+                read -p "[$dbname][$tablename] Where <Field name>: " fieldname
+                source FieldValidation.sh 1
+                if [[ $valid -eq 1 ]]
+                then 
+                    break
                 fi
             done
+
+            fieldnum=$( awk -F: -v fieldname=$fieldname '{if($1==fieldname)print NR}' ~/DB/$dbname/$tablename.meta )
+            FieldType=`awk -F: -v fnum=$fieldnum '{if(NR==fnum)print $2}' ~/DB/$dbname/$tablename.meta`;
+            while true
+            do
+                read -p "[$dbname][$tablename] Where [$fieldname] equal : " FieldValue
+                source dataTypeValidation.sh
+                if [ $valid -eq 1 ]	
+                then
+                    break;
+                fi
+            done
+            
+            touch ~/DB/$dbname/temp
+            awk -F: -v data=$FieldValue fieldnum=$fieldnum'{if($fieldnum!=data)print $0}' ~/DB/$dbname/$tablename > ~/DB/$dbname/temp
+            cat ~/DB/$dbname/temp > ~/DB/$dbname/$tablename
+            rm -f ~/DB/$dbname/temp
             break;;
-            *)  
-                echo "--------------------------------------"
-                echo "-------------wrong choise-------------"
-                echo "--------------------------------------"
+        *)  
+            echo "----------------------------------------------------------------------"
+            echo "----------------------------wrong choise------------------------------"
+            echo "----------------------------------------------------------------------"
     esac
 done
-after=$(wc -l < ~/DB/$1/$tablename)
-echo "--------------------------------------------------------------------------------------------------"
-echo "---------------------------------------"$(( $before - $after )) record is deleted"----------------------------------------"
-echo "--------------------------------------------------------------------------------------------------" 
+after=$(wc -l < ~/DB/$dbname/$tablename)
+echo "----------------------------------------------------------------------"
+echo "--------------------"$(( $before - $after )) record is deleted"---------------------------"
+echo "----------------------------------------------------------------------" 
 source QueryMenu.sh
