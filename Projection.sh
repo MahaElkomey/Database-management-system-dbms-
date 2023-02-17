@@ -11,8 +11,12 @@ while true
     done
 
 
+echo "----------------------------------------------------------------------"
+echo "------------ The dublicated column will be print once ----------------"
+echo "----------------------------------------------------------------------"
 
-touch ~/DB/$dbname/header # file for display header
+
+# touch ~/DB/$dbname/header # file for display header
 touch ~/DB/$dbname/headerNum
 touch ~/DB/$dbname/headerNumPrint
 header=""
@@ -40,10 +44,10 @@ do
     fi
     Fcount=$(( Fcount - 1));
 
-    if ! [[ $(grep -w "^$fieldname$" ~/DB/$dbname/header) ]];
+    if ! [[ $(grep -w "^$FieldNum$" ~/DB/$dbname/headerNum) ]];
     then
     	echo $FieldNum >> ~/DB/$dbname/headerNum;
-        echo $fieldname >> ~/DB/$dbname/header
+        # echo $fieldname >> ~/DB/$dbname/header
     fi
     
 done
@@ -61,7 +65,5 @@ done
 echo "-------------Output data In [$dbname][$tablename] table---------------"
 cut -d: -f $FieldArr ~/DB/$dbname/$tablename | column -t -s ":" -N "$header" -o "|"
 echo "----------------------------------------------------------------------"
-rm -f ~/DB/$dbname/header
-rm -f ~/DB/$dbname/headerNum
-rm -f ~/DB/$dbname/headerNumPrint
+rm -f ~/DB/$dbname/header*
 source SelectMenu.sh
