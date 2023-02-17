@@ -1,7 +1,7 @@
-### Database-management system (DBMS)
+# Database-management system (DBMS)
 Database management system(DBMS) using Bash-Script
 A simple Database Management System using bash shell scripting that handles all CRUD operations.
-## Features
+# Features
 - Create DB
 - Connect DB
 - Drop DB
@@ -14,15 +14,15 @@ A simple Database Management System using bash shell scripting that handles all 
 - Update Table
 - List All Tables
 --------------------------------------------------------------------------------------------------------------------------------------
-# Main Menu
+## Main Menu
 From the Main menu you can Enter to the DBMS :
-# Database Menu
+## Database Menu
 - Create Database
 - List Datebases
 - Connect Database
 - Drop Database
 
-# Connect Database Menu
+## Connect Database Menu
 After Connecting to Database you can do the following :
 - Create Table
 - List Tables
@@ -32,19 +32,19 @@ After Connecting to Database you can do the following :
 - Delete From Table
 - Update Table
 
-# Create Table
+## Create Table
 You must enter number of columns,Add name for each column,Select data type for column,by default the first column will be the Primay Key.
-# Insert Row
+## Insert Row
 You must enter data for all columns,and You must enter valid data as data type
-# Select
+## Select
 - Display All data in the table
 - Selection
 - Projection
-# Delete
+## Delete
 Delete All data in the table, or delete a specific record
-# Update
+## Update
 Update data according to condition
-# Drop
+## Drop
 Drop the all data with the structure
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Demo
